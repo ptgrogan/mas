@@ -654,7 +654,7 @@ var isrm = function() {
 
 var model = new isrm();
 
-var sim = new mas.sd.Simulator({
+var sim = new mas.sim.Simulator({
 	entities: model.entities,
 	initTime: 0,
 	timeStep: 0.25,

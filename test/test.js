@@ -16,7 +16,7 @@
  
 var mas = require("../lib/mas");
 
-var entity = new mas.sd.Entity();
+var entity = new mas.sim.Entity();
 console.log(entity);
 
 var flow = new mas.sd.Flow({getValue: function() {return 10;}} );
