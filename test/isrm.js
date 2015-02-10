@@ -42,12 +42,7 @@ var isrm = function() {
 		this.params[n] = arguments[0][n];
 	}
 	
-	var model = this;
 	this.entities = [
-		new mas.sd.Timer({
-			id: 'time',
-			name: 'Time'
-		}),
 		new mas.sd.Parameter({
 			id: 'schPressure', 
 			name: "Schedule Pressure", 
@@ -153,10 +148,10 @@ var isrm = function() {
 					"design activities shaped by schedule pressure " +
 					"and project time.",
 			units: "Reqs/Month",
-			getValue: function(){
-				return Math.max(0, -Math.pow(2*model.value("schPressure")
-						*model.value("time") - 10/model.value("schPressure"), 2)
-						+ model.value("schPressure")*300);
+			getValue: function(sim){
+				return Math.max(0, -Math.pow(2*sim.value("schPressure")
+						*sim.time - 10/sim.value("schPressure"), 2)
+						+ sim.value("schPressure")*300);
 			}
 		}),
 		new mas.sd.Flow({
@@ -164,8 +159,8 @@ var isrm = function() {
 			name: "Change Requirements", 
 			desc: "Rate of requirements generation due to change implementation.",
 			units: "Reqs/Month",
-			getValue: function() { 
-				return model.value("fracChangeReq")*model.value("changeImpl"); 
+			getValue: function(sim) {
+				return sim.value("fracChangeReq")*sim.value("changeImpl"); 
 			}
 		}),
 		new mas.sd.Flow({
@@ -173,8 +168,8 @@ var isrm = function() {
 			name: "Requirements Elicitation", 
 			desc: "Rate of requirements generation including initial and change components.",
 			units: "Reqs/Month",
-			getValue: function() { 
-				return model.value("initReq")+model.value("changeReq"); 
+			getValue: function(sim) {
+				return sim.value("initReq")+sim.value("changeReq"); 
 			}
 		}),
 		new mas.sd.Flow({
@@ -185,10 +180,10 @@ var isrm = function() {
 					"preliminary work at other levels of abstraction " +
 					"determined by the number of requirements and " +
 					"cognitive bandwidth of the team.",
-			getValue: function() { 
-				if(model.value("metaFlag")===1) { 
-					return Utils.intPart(Math.log(model.value("reqDefined") + 1) 
-							/ Math.log(model.value("cogBandwidth"))); 
+			getValue: function(sim) {
+				if(sim.value("metaFlag")===1) { 
+					return Utils.intPart(Math.log(sim.value("reqDefined") + 1) 
+							/ Math.log(sim.value("cogBandwidth"))); 
 				} else { 
 					return 1; 
 				} 
@@ -201,9 +196,9 @@ var isrm = function() {
 					"Concept exploration is always allowed at higher levels " +
 					"of abstraction and is also allowed under low levels of " +
 					"requirements elicitation.",
-			getValue: function() { 
-				if(model.value("levAbstraction") > 1 
-						|| model.value("reqElicit") < 10) { 
+			getValue: function(sim) {
+				if(sim.value("levAbstraction") > 1 
+						|| sim.value("reqElicit") < 10) { 
 					return 1; 
 				} else { 
 					return 0;
@@ -216,12 +211,12 @@ var isrm = function() {
 			desc: "Realized exploration rate of potential architectures. " +
 					"Exploration is limited by the maximum exploration rate " +
 					"and the architecture enumeration throughput. Schedule " +
-					"pressure acts as a multipler for concept exploration.",
+					"pressure acts as a multiplier for concept exploration.",
 			units: "Archs/Month",
-			getValue: function() { 
-				return model.value("schPressure")*Math.min(model.value("conSwitch")
-						*model.value("explorationRate"), model.value("conSwitch")
-						*model.value("archThroughput")); 
+			getValue: function(sim) {
+				return sim.value("schPressure")*Math.min(sim.value("conSwitch")
+						*sim.value("explorationRate"), sim.value("conSwitch")
+						*sim.value("archThroughput")); 
 			}
 		}),
 		new mas.sd.Flow({
@@ -234,12 +229,12 @@ var isrm = function() {
 					"Non-META explores at a fixed rate and stops when one " +
 					"architecture is retained.",
 			units: "Archs/Month",
-			getValue: function() { 
-				if(model.value("metaFlag")===1) { 
-					return (Math.exp(model.value("levAbstraction"))*10) 
-							/ ((0.1*model.value("time") + 1)
-								*(model.value("archRetained") + 1)); 
-				} else if(model.value("archRetained") > 1) { 
+			getValue: function(sim) {
+				if(sim.value("metaFlag")===1) { 
+					return (Math.exp(sim.value("levAbstraction"))*10) 
+							/ ((0.1*sim.time + 1)
+								*(sim.value("archRetained") + 1)); 
+				} else if(sim.value("archRetained") > 1) { 
 					return 0;
 				} else { 
 					return 10; 
@@ -253,10 +248,10 @@ var isrm = function() {
 					"Design is allowed at higher levels of abstraction or " +
 					"if concept exploration ends with at least one " +
 					"retained architecture.",
-			getValue: function() { 
-				if(model.value("levAbstraction") > 1 
-						|| model.value("conExploration") === 0 
-						&& model.value("archRetained") > 1) { 
+			getValue: function(sim) {
+				if(sim.value("levAbstraction") > 1 
+						|| sim.value("conExploration") === 0 
+						&& sim.value("archRetained") > 1) { 
 					return 1; 
 				} else { 
 					return 0;
@@ -271,8 +266,8 @@ var isrm = function() {
 					"and inverse-log of the number of architectures " +
 					"explored (elegance through exploration).",
 			getValue: function(){ 
-				return model.value("reqDefined")/(Math.log(Math.sqrt(
-						model.value("archExplored")) + 10)/Math.LN10); 
+				return sim.value("reqDefined")/(Math.log(Math.sqrt(
+						sim.value("archExplored")) + 10)/Math.LN10); 
 			}
 		}),
 		new mas.sd.Flow({
@@ -280,11 +275,11 @@ var isrm = function() {
 			name: "Productivity",
 			desc: "Multiplier for the productivity of workers. Decreases " +
 					"with increasing novelty, proportional to requirements " +
-					"defined, and inversely proporational to complexity.",
-			getValue: function() { 
-				return (-0.25*(model.value("novelty") - 1) + 0.75)
-						*Math.min(0.5, 0.5*model.value("reqDefined")
-							/(model.value("strComplexity") + 1)); 
+					"defined, and inversely proportional to complexity.",
+			getValue: function(sim) {
+				return (-0.25*(sim.value("novelty") - 1) + 0.75)
+						*Math.min(0.5, 0.5*sim.value("reqDefined")
+							/(sim.value("strComplexity") + 1)); 
 			}
 		}),
 		new mas.sd.Flow({
@@ -292,27 +287,27 @@ var isrm = function() {
 			name: "Design and Integration", 
 			desc: "Rate of design and integration specification. Proportional " +
 					"to schedule pressure. Specifications come from requirements " +
-					"(proporational to design speed, productivity, and " +
+					"(proportional to design speed, productivity, and " +
 					"fraction of unspecified requirements and inversely " +
 					"proportional to novelty) or change implementation.",
 			units: "Specs/Month",
-			getValue: function() { 
-				return model.value("schPressure")*(model.value("designSpeed")
-						*model.value("productivity")*(model.value("designSwitch")
-							*(1/(1-model.value("modCoverage")))
-								*Math.sqrt((model.value("systemSpecs") + 1)
-									*Math.max(0, (model.value("reqDefined") 
-										- model.value("systemSpecs")))))
-						+ (1 - model.value("fracChangeReq"))
-							*model.value("changeImpl")); 
+			getValue: function(sim) {
+				return sim.value("schPressure")*(sim.value("designSpeed")
+						*sim.value("productivity")*(sim.value("designSwitch")
+							*(1/(1-sim.value("modCoverage")))
+								*Math.sqrt((sim.value("systemSpecs") + 1)
+									*Math.max(0, (sim.value("reqDefined") 
+										- sim.value("systemSpecs")))))
+						+ (1 - sim.value("fracChangeReq"))
+							*sim.value("changeImpl")); 
 			}
 		}),
 		new mas.sd.Flow({
 			id: 'novelty', 
 			name: "Novelty",
 			desc: "Fraction of new components.",
-			getValue: function() { 
-				return 1 - model.value("modCoverage"); 
+			getValue: function(sim) {
+				return 1 - sim.value("modCoverage"); 
 			}
 		}),
 		new mas.sd.Flow({
@@ -320,11 +315,11 @@ var isrm = function() {
 			name: "Architecture Filtering", 
 			desc: "Rate to filter out unwanted architectures.",
 			units: "Archs/Month",
-			getValue: function() { 
-				if(model.value("archRetained") <= 1) { 
+			getValue: function(sim) {
+				if(sim.value("archRetained") <= 1) { 
 					return 0; 
 				} else {
-					return model.value("archFilteringDelay1a"); 
+					return sim.value("archFilteringDelay1a"); 
 				} 
 			}
 		}),
@@ -332,9 +327,9 @@ var isrm = function() {
 			id: 'testSwitch', 
 			name: "Test Switch",
 			desc: "Boolean to turn testing on (1) or off (0).",
-			getValue: function() { 
-				if(model.value("levAbstraction") > 1 
-						|| model.value("designIntegration") < 10) { 
+			getValue: function(sim) {
+				if(sim.value("levAbstraction") > 1 
+						|| sim.value("designIntegration") < 10) { 
 					return 1; 
 				} else { 
 					return 0;
@@ -347,15 +342,15 @@ var isrm = function() {
 			desc: "Rate of specification tests. Proportional to schedule " +
 					"pressure and productivity.",
 			units: "Tests/Month",
-			getValue: function() { 
-				if(model.value("testsPerformed") < model.value("systemSpecs")) { 
-					return model.value("schPressure")*model.value("testSwitch")
-							*(model.value("productivity")
-								*Math.sqrt((model.value("testsPerformed") + 1)
-									*(model.value("systemSpecs") 
-									- model.value("testsPerformed")))); 
+			getValue: function(sim) {
+				if(sim.value("testsPerformed") < sim.value("systemSpecs")) { 
+					return sim.value("schPressure")*sim.value("testSwitch")
+							*(sim.value("productivity")
+								*Math.sqrt((sim.value("testsPerformed") + 1)
+									*(sim.value("systemSpecs") 
+									- sim.value("testsPerformed")))); 
 				} else { 
-					return model.value("schPressure")*0; 
+					return sim.value("schPressure")*0; 
 				} 
 			}
 		}),
@@ -364,20 +359,20 @@ var isrm = function() {
 			units: "Changes/Month",
 			name: "Change Generation", 
 			desc: "Rate of change generation.",
-			getValue: function() { 
-				if(model.value("metaFlag")===1) { 
-					return model.value("changeFlag")
-							*(Math.max((model.value("reqDefined") 
-								+ 1 - model.value("reqValidated"))
-								/(model.value("reqDefined") + 1), 0))
-							*model.value("changeGenDelay1a")
-							*(model.value("novelty")+0.5); 
+			getValue: function(sim) {
+				if(sim.value("metaFlag")===1) { 
+					return sim.value("changeFlag")
+							*(Math.max((sim.value("reqDefined") 
+								+ 1 - sim.value("reqValidated"))
+								/(sim.value("reqDefined") + 1), 0))
+							*sim.value("changeGenDelay1a")
+							*(sim.value("novelty")+0.5); 
 				} else { 
-					return model.value("changeFlag")
-							*(Math.max((model.value("reqDefined") 
-								+ 1 - model.value("reqValidated"))
-								/(model.value("reqDefined") + 1), 0))
-							*model.value("changeGenDelay1a")*1; 
+					return sim.value("changeFlag")
+							*(Math.max((sim.value("reqDefined") 
+								+ 1 - sim.value("reqValidated"))
+								/(sim.value("reqDefined") + 1), 0))
+							*sim.value("changeGenDelay1a")*1; 
 				} 
 			}
 		}),
@@ -386,17 +381,17 @@ var isrm = function() {
 			name: "Change Implementation", 
 			desc: "Rate of changes implemented.",
 			units: "Changes/Month",
-			getValue: function() { 
-				return model.value("changeImplSmootha"); 
+			getValue: function(sim) {
+				return sim.value("changeImplSmootha"); 
 			}
 		}),
 		new mas.sd.Flow({
 			id: 'validationSwitch',  
 			name: "Validation Switch",
 			desc: "Boolean to turn validation on (1) or off (0).",
-			getValue: function() { 
-				if(model.value("levAbstraction") > 1 
-						|| model.value("verification") < 10) { 
+			getValue: function(sim) {
+				if(sim.value("levAbstraction") > 1 
+						|| sim.value("verification") < 10) { 
 					return 1; 
 				} else { 
 					return 0; 
@@ -409,17 +404,17 @@ var isrm = function() {
 			desc: "Rate of requirements validation. Proportional to schedule " +
 					"pressure and productivity.",
 			units: "Reqs/Month",
-			getValue: function() { 
-				if(model.value("reqValidated") 
-						< model.value("testsPerformed")) { 
-					return model.value("schPressure")
-							*(model.value("validationSwitch")
-							*(model.value("productivity")
-							*Math.sqrt((model.value("reqValidated") + 1)
-								*(model.value("testsPerformed") 
-								- model.value("reqValidated"))))); 
+			getValue: function(sim) {
+				if(sim.value("reqValidated") 
+						< sim.value("testsPerformed")) { 
+					return sim.value("schPressure")
+							*(sim.value("validationSwitch")
+							*(sim.value("productivity")
+							*Math.sqrt((sim.value("reqValidated") + 1)
+								*(sim.value("testsPerformed") 
+								- sim.value("reqValidated"))))); 
 				} else { 
-					return model.value("schPressure")*0; 
+					return sim.value("schPressure")*0; 
 				} 
 			}
 		}),
@@ -427,9 +422,9 @@ var isrm = function() {
 			id: 'certCompletion', 
 			name: "Certificate of Completion",
 			desc: "Number of certificates of completion issued.",
-			getValue: function() { 
-				if(model.value("reqValidated") > 0.999*model.value("reqDefined") 
-						&& model.value("pendChanges") < 1) { 
+			getValue: function(sim) {
+				if(sim.value("reqValidated") > 0.999*sim.value("reqDefined") 
+						&& sim.value("pendChanges") < 1) { 
 					return 1; 
 				} else { 
 					return 0;
@@ -441,8 +436,8 @@ var isrm = function() {
 			name: "DI Staff Ratio", 
 			desc: "Productivity of design and integration staff.",
 			units: "Parts/Person-Month",
-			getValue: function() { 
-				return 4/model.value("novelty"); 
+			getValue: function(sim) {
+				return 4/sim.value("novelty"); 
 			}
 		}),
 		new mas.sd.Flow({
@@ -450,10 +445,10 @@ var isrm = function() {
 			name: "System Engineers", 
 			desc: "Number of system engineers.",
 			units: "People",
-			getValue: function() { 
-				return Utils.intPart((model.value("conExploration")
-							/model.value("ceStaffRatio")) 
-						+ (model.value("reqElicit")/model.value("reStaffRatio"))); 
+			getValue: function(sim) {
+				return Utils.intPart((sim.value("conExploration")
+							/sim.value("ceStaffRatio")) 
+						+ (sim.value("reqElicit")/sim.value("reStaffRatio"))); 
 			}
 		}),
 		new mas.sd.Flow({
@@ -461,10 +456,10 @@ var isrm = function() {
 			name: "Designers", 
 			desc: "Number of designers.",
 			units: "People",
-			getValue: function() { 
-				return Utils.intPart((model.value("designIntegration")
-							/model.value("diStaffRatio")) 
-						+ (model.value("changeGen")/model.value("cgStaffRatio"))); 
+			getValue: function(sim) {
+				return Utils.intPart((sim.value("designIntegration")
+							/sim.value("diStaffRatio")) 
+						+ (sim.value("changeGen")/sim.value("cgStaffRatio"))); 
 			}
 		}),
 		new mas.sd.Flow({
@@ -472,9 +467,9 @@ var isrm = function() {
 			name: "Testers", 
 			desc: "Number of testers.",
 			units: "People",
-			getValue: function() { 
-				return Utils.intPart((model.value("validation") 
-						+ model.value("verification"))/model.value("vvStaffRatio")); 
+			getValue: function(sim) {
+				return Utils.intPart((sim.value("validation") 
+						+ sim.value("verification"))/sim.value("vvStaffRatio")); 
 			}
 		}),
 		new mas.sd.Flow({
@@ -482,9 +477,9 @@ var isrm = function() {
 			name: "Spending Rate", 
 			desc: "Rate of spending money.",
 			units: "$/Month",
-			getValue: function() { 
-				return (model.value("sysEngineers") + model.value("designers") 
-						+ model.value("testers")) * model.value("aveLaborRate"); 
+			getValue: function(sim) {
+				return (sim.value("sysEngineers") + sim.value("designers") 
+						+ sim.value("testers")) * sim.value("aveLaborRate"); 
 			}
 		}),
 		new mas.sd.Stock({
@@ -492,8 +487,8 @@ var isrm = function() {
 			name: "Requirements Defined", 
 			desc: "Number of requirements defined.",
 			units: "Reqs",
-			getDerivative: function() { 
-				return model.value("reqElicit"); 
+			getDerivative: function(sim) { 
+				return sim.value("reqElicit"); 
 			}
 		}),
 		new mas.sd.Stock({
@@ -501,8 +496,8 @@ var isrm = function() {
 			name: "Architectures Explored", 
 			desc: "Number of architectures explored.",
 			units: "Archs",
-			getDerivative: function() { 
-				return Utils.intPart(model.value("conExploration")); 
+			getDerivative: function(sim) { 
+				return Utils.intPart(sim.value("conExploration")); 
 			}
 		}),
 		new mas.sd.Stock({
@@ -510,9 +505,9 @@ var isrm = function() {
 			name: "Architectures Retained", 
 			desc: "Number of architectures retained.",
 			units: "Archs",
-			getDerivative: function() { 
-				return Utils.intPart(model.value("conExploration") 
-						- model.value("archFiltering")); 
+			getDerivative: function(sim) { 
+				return Utils.intPart(sim.value("conExploration") 
+						- sim.value("archFiltering")); 
 			}
 		}),
 		new mas.sd.Stock({
@@ -520,8 +515,8 @@ var isrm = function() {
 			name: "System Specifications", 
 			desc: "Number of system specifications generated.",
 			units: "Specs", 
-			getDerivative: function() { 
-				return model.value("designIntegration"); 
+			getDerivative: function(sim) { 
+				return sim.value("designIntegration"); 
 			}
 		}),
 		new mas.sd.Stock({
@@ -529,8 +524,8 @@ var isrm = function() {
 			name: "Tests Performed", 
 			desc: "Number of specifications tested.",
 			units: "Tests",
-			getDerivative: function() { 
-				return model.value("verification"); 
+			getDerivative: function(sim) { 
+				return sim.value("verification"); 
 			}
 		}),
 		new mas.sd.Stock({
@@ -538,8 +533,8 @@ var isrm = function() {
 			name: "Pending Changes", 
 			desc: "Number of changes pending completion.",
 			units: "Changes",
-			getDerivative: function() { 
-				return model.value("changeGen") - model.value("changeImpl"); 
+			getDerivative: function(sim) { 
+				return sim.value("changeGen") - sim.value("changeImpl"); 
 			}
 		}),
 		new mas.sd.Stock({
@@ -547,8 +542,8 @@ var isrm = function() {
 			name: "Cumulative Changes", 
 			desc: "Number of changes generated.",
 			units: "Changes",
-			getDerivative: function() { 
-				return model.value("changeGen"); 
+			getDerivative: function(sim) { 
+				return sim.value("changeGen"); 
 			}
 		}),
 		new mas.sd.Stock({
@@ -556,8 +551,8 @@ var isrm = function() {
 			name: "Requirements Validated", 
 			desc: "Number of requirements validated.",
 			units: "Reqs",
-			getDerivative: function() { 
-				return model.value("validation"); 
+			getDerivative: function(sim) { 
+				return sim.value("validation"); 
 			}
 		}),
 		new mas.sd.Stock({
@@ -565,8 +560,8 @@ var isrm = function() {
 			name: "NRE Cost", 
 			desc: "Non-recurring engineering cost.",
 			units: "$",
-			getDerivative: function() { 
-				return model.value("spendRate"); 
+			getDerivative: function(sim) { 
+				return sim.value("spendRate"); 
 			}
 		}),
 		new mas.sd.Stock({
@@ -574,93 +569,71 @@ var isrm = function() {
 			name: "Project Duration", 
 			desc: "Duration until certificate of completion is achieved.",
 			units: "Months",
-			getDerivative: function() { 
-				return 1 - model.value("certCompletion"); 
+			getDerivative: function(sim) { 
+				return 1 - sim.value("certCompletion"); 
 			}
 		}),
 		new mas.sd.Smooth({
 			id: 'changeImplSmootha', 
 			delayTime: 1, 
 			initValue: 1, 
-			getInput: function(){ 
-				return model.value("changeImplDelay1a"); 
+			getInput: function(sim){ 
+				return sim.value("changeImplDelay1a"); 
 			}
 		}),
 		new mas.sd.Delay1({
 			id: 'archFilteringDelay1a', 
 			delayTime: 1, 
-			getInput: function() { 
-				return model.value("conExploration"); 
+			getInput: function(sim) { 
+				return sim.value("conExploration"); 
 			}
 		}),
 		new mas.sd.Delay1({
 			id: 'changeGenDelay1a', 
 			delayTime: 1, 
-			getInput: function() { 
-				return (model.value("strComplexity")/(model.value("reqDefined") + 1))
-						*((1 - model.value("fracProblemsCaught"))
-							*model.value("verification") 
-						+ (1 - model.value("fracProblemsCaught"))
-							*model.value("validation") 
-						+ (1 - model.value("fracProblemsCaught"))
-							*model.value("designIntegration") 
-						+ model.value("changeGenDelay1b")); 
+			getInput: function(sim) { 
+				return (sim.value("strComplexity")/(sim.value("reqDefined") + 1))
+						*((1 - sim.value("fracProblemsCaught"))
+							*sim.value("verification") 
+						+ (1 - sim.value("fracProblemsCaught"))
+							*sim.value("validation") 
+						+ (1 - sim.value("fracProblemsCaught"))
+							*sim.value("designIntegration") 
+						+ sim.value("changeGenDelay1b")); 
 			}
 		}),
 		new mas.sd.Delay1({
 			id: 'changeGenDelay1b', 
 			delayTime: 4, 
 			initValue:0.12, 
-			getInitValue: function() {
-				return this.getInput();
-			}, getInput: function() { 
-				return model.value("metaFlag")*model.value("novelty")
-						*(1 - model.value("modIntegrity"))
-						*model.value("designIntegration"); 
+			getInitValue: function(sim) {
+				return this.getInput(sim);
+			}, getInput: function(sim) { 
+				return sim.value("metaFlag")*sim.value("novelty")
+						*(1 - sim.value("modIntegrity"))
+						*sim.value("designIntegration"); 
 			}
 		}),
 		new mas.sd.Delay1({
 			id: 'changeImplDelay1a', 
 			delayTime: 0.5, 
-			getInput: function() { 
-				return model.value("changeGen"); 
+			getInput: function(sim) { 
+				return sim.value("changeGen"); 
 			}
 		}),
 	];
-	/**
-	 * Gets an entity instance by ID.
-	 * @param {String} id the unique ID
-	 * @returns {Object} the entity
-	 */
-	this.getEntity = function(id) {
-		for(var i = 0; i < this.entities.length; i++) {
-			if(this.entities[i].id===id) {
-				return this.entities[i];
-			}
-		}
-	};
-	/**
-	 * Gets the value of an entity by ID.
-	 * @param {String} id the unique ID
-	 * @returns {Number} the value
-	 */
-	this.value = function(id) {
-		var entity = this.getEntity(id);
-		if(typeof entity !== 'undefined') {
-			return entity.getValue();
-		}
-	};
 }
 
 var model = new isrm();
 
-var sim = new mas.sim.Simulator({
+var sim = new mas.sim.LoggingSimulator({
 	entities: model.entities,
 	initTime: 0,
 	timeStep: 0.25,
 	maxTime: 30
 });
 sim.on('init advance', function(time) {
-	console.log(time + ' ' + model.value('nreCost'));
+	console.log(time + ' ' + sim.value('nreCost'));
 });
 sim.execute();
+console.log(JSON.stringify(sim));
