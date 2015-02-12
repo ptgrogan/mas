@@ -5,7 +5,7 @@
   "author": "Paul T. Grogan <ptgrogan@mit.edu>",
   "repository": {
     "type": "git",
-    "url": "git://github.com/ptgrogan/js-mas.git"
+    "url": "git://github.com/ptgrogan/mas.git"
   },
   "licenses": [
     {
