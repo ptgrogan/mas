@@ -1,2 +1,2 @@
-# js-mas
+# mas
 JavaScript Modeling and Simulation
