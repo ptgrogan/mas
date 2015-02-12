@@ -14,24 +14,29 @@
  * limitations under the License.
  */
  
-var mas = require("../lib/mas");
+var requirejs = require('requirejs');
 
-var entity = new mas.sim.Entity();
-console.log(entity);
+requirejs.config({
+  baseUrl: '../lib',
+  nodeRequire: require
+});
 
-var flow = new mas.sd.Flow({getValue: function() {return 10;}} );
-console.log(flow.getValue());
+requirejs(['mas'], function(mas) {
+    var entity = new mas.sim.Entity();
+    console.log(entity);
 
-var stock = new mas.sd.Stock({initValue: 1, getDerivative: function() { return flow.getValue(); } });
+    var flow = new mas.sd.Flow({getValue: function() {return 10;}} );
+    console.log(flow.getValue());
 
-var sim = new mas.sim.Simulator({initTime: 0, timeStep: 0.5, method: 'euler'});
+    var stock = new mas.sd.Stock({initValue: 1, getDerivative: function() { return flow.getValue(); } });
 
-console.log(sim.integrate);
+    var sim = new mas.sim.Simulator({initTime: 0, timeStep: 0.5});
 
-console.log(stock.getValue());
-stock.init();
-console.log(stock.getValue());
-stock.tick(0.5, new mas.sim.ExplicitEuler());
-console.log(stock.getValue());
-stock.tock();
-console.log(stock.getValue());
+    console.log(stock.getValue());
+    stock.init();
+    console.log(stock.getValue());
+    stock.tick(sim);
+    console.log(stock.getValue());
+    stock.tock();
+    console.log(stock.getValue());
+});

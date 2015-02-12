@@ -2,14 +2,10 @@
   "name": "mas",
   "version": "0.0.1",
   "description": "JavaScript Modeling and Simulation",
-  "author": {
-	"name": "Paul T. Grogan",
-	"email": "ptgrogan@mit.edu",
-	"url": "http://web.mit.edu/ptgrogan/www"
-  }
+  "author": "Paul T. Grogan <ptgrogan@mit.edu>",
   "repository": {
     "type": "git",
-    "url": "git://github.com/ptgrogan/js-mas.git
+    "url": "git://github.com/ptgrogan/js-mas.git"
   },
   "licenses": [
     {
@@ -18,6 +14,7 @@
     }
   ],
   "main": "./lib/mas.js",
-  "dependencies": { },
-  "scripts": { }
+  "dependencies": {
+    "requirejs" : "*"
+  }
 }
