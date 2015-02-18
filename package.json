@@ -1,7 +1,7 @@
 {
     "name": "mas",
-    "version": "0.0.2",
-    "description": "JavaScript Modeling and Simulation",
+    "version": "0.0.3",
+    "description": "JavaScript Modeling and Simulation. Currently supports a portion of the System Dynamics (SD) formalism.",
     "author": "Paul T. Grogan <ptgrogan@mit.edu>",
     "repository": {
         "type": "git",
